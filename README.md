@@ -4,15 +4,17 @@ This repository contains the official implementation of **EMA-Tree SAC**, a comp
 
 ## Repository Structure
 
-- `agents/`: Contains the baseline Soft Actor-Critic (`sac.py`) and our novel agent (`ema_tree_sac.py`).
-- `envs/`: Contains the `Distracting HalfCheetah` benchmark environment.
-- `scripts/train_cheetah.py`: The main training loop.
-- `scripts/plot_cheetah.py`: Generates the side-by-side performance and feature pruning plots.
-- `run_experiments.sh`: An automated, resumable bash script to run the 10-seed experiment sweep.
+- `agents/`: Contains the baseline Soft Actor-Critic (`sac.py`), our novel agent (`ema_tree_sac.py`), and regularized baselines (`l1_sac.py`, `group_lasso_sac.py`).
+- `envs/`: Contains the Distracting continuous control environments (`cheetah`, `hopper`, `walker2d`).
+- `scripts/train.py`: The main resumable training loop supporting automatic checkpointing.
+- `scripts/plot_results.py`: Generates side-by-side performance and feature pruning plots.
+- `run_experiments.sh`: An automated, resumable bash script to run the multi-environment, multi-algorithm experiment sweep.
 - `Paper.tex` & `tmlr.bib`: The LaTeX source code for the manuscript.
+- `requirements.txt`: Project dependencies.
 
 ## Getting Started
 
-1. Set up the environment: `conda activate gymnasium`
+1. Install dependencies: `pip install -r requirements.txt` (or activate your gymnasium conda environment)
 2. Run the experiments: `bash run_experiments.sh`
-3. The high-resolution results plot will be saved to `plots/combined_results.pdf`.
+3. Results and plots will be dynamically saved to `results/$TIMESTEPS/` and `plots/$TIMESTEPS/`.
+4. If the script is interrupted, simply rerun it. It will automatically detect checkpoints and resume from the exact timestep it left off!

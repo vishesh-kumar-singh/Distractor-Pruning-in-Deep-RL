@@ -1,0 +1,7 @@
+future_stuff/
+*.tex
+*.bib
+__pycache__/
+*.pyc
+*.pt
+*.pkl

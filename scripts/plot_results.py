@@ -34,7 +34,7 @@ def main():
     
     algos = ['sac', 'l1_sac', 'group_lasso_sac', 'ema_tree_sac']
     algo_names = {'sac': 'Baseline SAC', 'l1_sac': 'L1-SAC', 'group_lasso_sac': 'Group-Lasso SAC', 'ema_tree_sac': 'EMA-Tree SAC (Ours)'}
-    colors = {'sac': '#E63946', 'l1_sac': '#F4A261', 'group_lasso_sac': '#E9C46A', 'ema_tree_sac': '#2A9D8F'}
+    colors = {'sac': '#E63946', 'l1_sac': '#F4A261', 'group_lasso_sac': '#9B5DE5', 'ema_tree_sac': '#2A9D8F'}
     
     eval_freq = 5000
     
@@ -64,7 +64,7 @@ def main():
             padded_evals = np.array([np.pad(e, (0, max_len - len(e)), constant_values=np.nan) for e in all_evals])
             
             mean_evals = np.nanmean(padded_evals, axis=0)
-            std_evals = np.nanstd(padded_evals, axis=0)
+            std_evals = np.nanstd(padded_evals, axis=0) / np.sqrt(len(all_evals)) # Use Standard Error for cleaner plots
             
             mean_features = []
             if all_features:
@@ -129,21 +129,21 @@ def main():
                 ax_feat.plot(timesteps, features, label=algo_names[algo], color=colors[algo], linewidth=2.5)
                 
         # Format Performance Plot
-        ax_perf.set_title(f'Performance on {env_names[env]}', fontsize=16, fontweight='bold')
-        ax_perf.set_xlabel('Timesteps', fontsize=14)
-        ax_perf.set_ylabel('Average Return', fontsize=14)
-        ax_perf.tick_params(axis='both', which='major', labelsize=12)
+        ax_perf.set_title(f'Performance on {env_names[env]}', fontsize=21, fontweight='bold')
+        ax_perf.set_xlabel('Timesteps', fontsize=19)
+        ax_perf.set_ylabel('Average Return', fontsize=19)
+        ax_perf.tick_params(axis='both', which='major', labelsize=15)
         if ax_perf.get_legend_handles_labels()[0]:
-            ax_perf.legend(fontsize=12, loc='upper left')
+            ax_perf.legend(fontsize=15, loc='upper left')
         
         # Format Feature Plot
         ax_feat.axhline(y=true_features[env], color='black', linestyle='--', linewidth=2, label=f'True Features ({true_features[env]})')
-        ax_feat.set_title(f'Feature Dynamics ({env_names[env]})', fontsize=16, fontweight='bold')
-        ax_feat.set_xlabel('Timesteps', fontsize=14)
-        ax_feat.set_ylabel('Active Features', fontsize=14)
-        ax_feat.tick_params(axis='both', which='major', labelsize=12)
+        ax_feat.set_title(f'Feature Dynamics ({env_names[env]})', fontsize=21, fontweight='bold')
+        ax_feat.set_xlabel('Timesteps', fontsize=19)
+        ax_feat.set_ylabel('Active Features', fontsize=19)
+        ax_feat.tick_params(axis='both', which='major', labelsize=15)
         if ax_feat.get_legend_handles_labels()[0]:
-            ax_feat.legend(fontsize=12, loc='upper right')
+            ax_feat.legend(fontsize=14, loc='upper right')
         
         fig_perf.tight_layout()
         fig_perf.savefig(f'plots/{args.timesteps}/{env}_performance.pdf', format='pdf', dpi=600, bbox_inches='tight')

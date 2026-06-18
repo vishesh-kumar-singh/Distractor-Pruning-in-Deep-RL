@@ -1,7 +1,7 @@
 #!/bin/bash
 
 # Configuration
-TIMESTEPS=1000000 # Set to 100000 for a full run
+TIMESTEPS=100000 # Set to 100000 for a full run
 SEEDS=(42 43 44 45 46 47 48 49 50 51)
 
 ENVS=("cheetah" "hopper" "walker2d")
@@ -33,10 +33,15 @@ for env in "${ENVS[@]}"; do
                 python scripts/train.py --env "$env" --algo "$algo" --seed "$seed" --timesteps "$TIMESTEPS"
             fi
         done
+        echo ">>> Updating plots for Phase 1..."
+        python scripts/plot_results.py --timesteps "$TIMESTEPS"
     done
-    
-    echo ">>> Updating plots for Phase 1..."
-    python scripts/plot_results.py --timesteps "$TIMESTEPS"
+done
+
+for env in "${ENVS[@]}"; do
+    echo "========================================================"
+    echo "Starting Environment: $env"
+    echo "========================================================"
     
     # Phase 2: L1 SAC and Group Lasso SAC
     echo ">>> Phase 2: Running L1 SAC and Group-Lasso SAC"
@@ -50,10 +55,10 @@ for env in "${ENVS[@]}"; do
                 python scripts/train.py --env "$env" --algo "$algo" --seed "$seed" --timesteps "$TIMESTEPS"
             fi
         done
+        python scripts/plot_results.py --timesteps "$TIMESTEPS"
+        echo ">>> Updating plots for Phase 2..."
     done
     
-    echo ">>> Updating plots for Phase 2..."
-    python scripts/plot_results.py --timesteps "$TIMESTEPS"
 done
 
 echo "--------------------------------------------------------"

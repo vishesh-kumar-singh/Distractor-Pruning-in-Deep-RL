@@ -7,6 +7,7 @@ import sys
 import warnings
 import pickle
 import random
+import time
 from tqdm import tqdm
 
 sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
@@ -22,6 +23,7 @@ from agents.sac import SAC, ReplayBuffer
 from agents.ema_tree_sac import EMATreeSAC
 from agents.l1_sac import L1SAC
 from agents.group_lasso_sac import GroupLassoSAC
+from agents.ema_tree_sac_reward import EMATreeSACRewardTarget
 
 def evaluate_policy(env, agent, episodes=5):
     returns = []
@@ -40,7 +42,7 @@ def evaluate_policy(env, agent, episodes=5):
 def main():
     parser = argparse.ArgumentParser()
     parser.add_argument('--env', type=str, default='cheetah', choices=['cheetah', 'hopper', 'walker2d'])
-    parser.add_argument('--algo', type=str, default='sac', choices=['sac', 'ema_tree_sac', 'l1_sac', 'group_lasso_sac'])
+    parser.add_argument('--algo', type=str, default='sac', choices=['sac', 'ema_tree_sac', 'l1_sac', 'group_lasso_sac', 'ema_tree_sac_reward'])
     parser.add_argument('--seed', type=int, default=42)
     parser.add_argument('--timesteps', type=int, default=100000)
     parser.add_argument('--eval_freq', type=int, default=5000)
@@ -49,6 +51,8 @@ def main():
     parser.add_argument('--alpha', type=float, default=0.2)
     parser.add_argument('--hidden_size', type=int, default=256)
     parser.add_argument('--lr', type=float, default=0.0003)
+    parser.add_argument('--ema_beta', type=float, default=0.95)
+    parser.add_argument('--exp_suffix', type=str, default='')
     args = parser.parse_args()
 
     if args.env == 'cheetah':
@@ -77,17 +81,21 @@ def main():
         agent = L1SAC(state_dim, env.action_space, args)
     elif args.algo == 'group_lasso_sac':
         agent = GroupLassoSAC(state_dim, env.action_space, args)
+    elif args.algo == 'ema_tree_sac_reward':
+        agent = EMATreeSACRewardTarget(state_dim, env.action_space, args)
     else:
         raise ValueError(f"Unknown algorithm: {args.algo}")
 
     memory = ReplayBuffer(1000000)
     
-    save_dir = os.path.join('results', str(args.timesteps), args.env, args.algo)
+    save_dir_name = args.algo + args.exp_suffix
+    save_dir = os.path.join('results', str(args.timesteps), args.env, save_dir_name)
     os.makedirs(save_dir, exist_ok=True)
     checkpoint_path = os.path.join(save_dir, f"checkpoint_seed{args.seed}.pt")
     memory_path = os.path.join(save_dir, f"checkpoint_memory_seed{args.seed}.pkl")
 
     start_t = 0
+    total_time = 0.0
     evaluations = []
     active_features_history = []
 
@@ -101,11 +109,14 @@ def main():
         start_t = checkpoint_data['t']
         evaluations = checkpoint_data['evaluations']
         active_features_history = checkpoint_data['active_features_history']
+        total_time = checkpoint_data.get('total_time', 0.0)
         
         random.setstate(checkpoint_data['random_state'])
         np.random.set_state(checkpoint_data['np_random_state'])
         torch.set_rng_state(checkpoint_data['torch_random_state'])
         print(f"Resumed from checkpoint at timestep {start_t}")
+    
+    start_time = time.time() - total_time
     
     # Training Loop
     state, _ = env.reset(seed=args.seed)
@@ -162,6 +173,7 @@ def main():
                     't': t + 1,
                     'evaluations': evaluations,
                     'active_features_history': active_features_history,
+                    'total_time': time.time() - start_time,
                     'random_state': random.getstate(),
                     'np_random_state': np.random.get_state(),
                     'torch_random_state': torch.get_rng_state(),
@@ -173,10 +185,11 @@ def main():
     np.save(f"{save_dir}/{args.algo}_features_seed{args.seed}.npy", active_features_history)
     
     # Update live monitoring JSON
-    with open(f"{save_dir}/monitoring_{args.algo}.json", "w") as f:
+    with open(f"{save_dir}/monitoring_{save_dir_name}.json", "w") as f:
         json.dump({
             "evaluations": evaluations,
-            "active_features": active_features_history
+            "active_features": active_features_history,
+            "wall_clock_time": time.time() - start_time
         }, f, indent=4)
         
     # Cleanup checkpoints

@@ -10,7 +10,8 @@ class EMATreeSAC(SAC):
         self.causal_mask = np.ones(num_inputs, dtype=np.float32)
         self.causal_mask_tensor = torch.FloatTensor(self.causal_mask).to(self.device)
         self.ema_importances = None
-        self.ema_alpha = 0.1
+        self.ema_beta = getattr(args, 'ema_beta', 0.95)
+        self.ema_alpha = 1.0 - self.ema_beta
         self.discovery_freq = 5000
         self.updates_done = 0
         

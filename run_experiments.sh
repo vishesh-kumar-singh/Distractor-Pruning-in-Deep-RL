@@ -33,9 +33,10 @@ for env in "${ENVS[@]}"; do
                 python scripts/train.py --env "$env" --algo "$algo" --seed "$seed" --timesteps "$TIMESTEPS"
             fi
         done
-        echo ">>> Updating plots for Phase 1..."
-        python scripts/plot_results.py --timesteps "$TIMESTEPS"
     done
+    echo ">>> Updating plots for Phase 1..."
+    python scriecho ">>> Updating plots for Phase 1..."
+    python scripts/plot_results.py --timesteps "$TIMESTEPS"
 done
 
 for env in "${ENVS[@]}"; do
@@ -55,12 +56,50 @@ for env in "${ENVS[@]}"; do
                 python scripts/train.py --env "$env" --algo "$algo" --seed "$seed" --timesteps "$TIMESTEPS"
             fi
         done
-        python scripts/plot_results.py --timesteps "$TIMESTEPS"
-        echo ">>> Updating plots for Phase 2..."
     done
+    echo ">>> Updating plots for Phase 2..."
+    python scripts/plot_results.py --timesteps "$TIMESTEPS"
     
 done
 
 echo "--------------------------------------------------------"
-echo "All runs completed!"
+echo "All main runs completed!"
 echo "Check 'plots/${TIMESTEPS}' for the performance comparison."
+echo "--------------------------------------------------------"
+
+# Phase 3: Reward Target Ablation
+echo "========================================================"
+echo ">>> Phase 3: Reward Target Ablation (HalfCheetah)"
+echo "========================================================"
+mkdir -p "results/${TIMESTEPS}/cheetah/ema_tree_sac_reward"
+for seed in "${SEEDS[@]}"; do
+    if [ -f "results/${TIMESTEPS}/cheetah/ema_tree_sac_reward/ema_tree_sac_reward_seed${seed}.npy" ]; then
+        echo "      ema_tree_sac_reward | Already completed. Skipping."
+    else
+        echo "      Running ema_tree_sac_reward | Timesteps: $TIMESTEPS"
+        python scripts/train.py --env cheetah --algo ema_tree_sac_reward --seed "$seed" --timesteps "$TIMESTEPS"
+    fi
+done
+
+# Phase 4: Full Beta Sensitivity Sweep
+echo "========================================================"
+echo ">>> Phase 4: Full EMA Beta Sensitivity Sweep"
+echo "========================================================"
+for env in "${ENVS[@]}"; do
+    echo "  > Environment: $env"
+    for beta in 0.5 0.1; do
+        mkdir -p "results/${TIMESTEPS}/${env}/ema_tree_sac_beta${beta}"
+        for seed in "${SEEDS[@]}"; do
+            if [ -f "results/${TIMESTEPS}/${env}/ema_tree_sac_beta${beta}/ema_tree_sac_seed${seed}.npy" ]; then
+                echo "      ema_tree_sac_beta${beta} on $env | Already completed. Skipping."
+            else
+                echo "      Running ema_tree_sac_beta${beta} on $env | Timesteps: $TIMESTEPS"
+                python scripts/train.py --env "$env" --algo ema_tree_sac --ema_beta "$beta" --exp_suffix "_beta${beta}" --seed "$seed" --timesteps "$TIMESTEPS"
+            fi
+            python scripts/plot_results.py --timesteps "$TIMESTEPS"
+        done
+    done
+done
+
+echo "--------------------------------------------------------"
+echo "Ablation Experiments Completed!"
